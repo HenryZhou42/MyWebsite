@@ -10,3 +10,22 @@ spring:
     username: root
     password: s1050218
     driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/*Mapper.xml
+  type-aliases-package: com.zyh.mywebsite.mapper
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    banner: true
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-not-delete-value: 0
+      logic-delete-value: 1
+  extension:
+    enabled: true
+    mapper-package: com.zyh.mywebsite.mapper
+    data-permission:
+      enabled: true
