@@ -12,12 +12,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping(value ={"/api/auth"}, produces="application/json",consumes = {"application/json", "application/x-www-form-urlencoded"})
+@RequestMapping(value ={"/api/auth"})
 @ResponseBody
 public class AuthController {
     @Autowired
     private UserService userService;
-    @PostMapping(value = {"/register"}, produces = "application/json")
+    @PostMapping(value = {"/register"})
     public ResponseEntity<Map<String, Object>> register(@RequestBody User user) {
         try {
             // 尝试注册用户
@@ -44,7 +44,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseBody);
         }
     }
-    @PostMapping(value = {"/login"}, produces = "application/json")
+    @PostMapping(value = {"/login"})
     public ResponseEntity<Map<String, String>> login(@RequestBody User user) {
         try {
             User authenticatedUser = userService.authenticateUser(user);
