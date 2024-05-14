@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>User Login</title>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+            // 确保DOM加载完毕后再绑定事件
+            document.getElementById('loginForm').addEventListener('submit', function(event) {
+                event.preventDefault(); // 阻止表单默认提交行为
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password }) // 直接传递对象给JSON.stringify
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log(data); // 处理成功返回的数据，例如显示欢迎信息或重定向
+                        alert('Login successful'); // 示例：简单提示登录成功
+                        window.location.href = 'index.html';
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Login failed, please check your username and password'); // 示例：简单提示登录失败
+                    });
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <h2>User Login</h2>
+        <form id="loginForm">
+            <label for="username">Username:</label><br>
+            <input type="text" id="username" name="username" required><br>
+
+            <label for="password">Password:</label><br>
+            <input type="password" id="password" name="password" required><br>
+
+            <input type="submit" value="Login">
+        </form>
+        <p>New user? <a href="register.html">Register here</a></p>
+    </body>
+</html>

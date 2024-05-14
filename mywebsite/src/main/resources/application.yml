@@ -1,0 +1,12 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: mywebsite
+  # 数据库连接
+  datasource:
+    url: jdbc:mysql://localhost:3306/my_test_database?useSSL=false&serverTimezone=UTC
+    username: root
+    password: s1050218
+    driver-class-name: com.mysql.cj.jdbc.Driver
