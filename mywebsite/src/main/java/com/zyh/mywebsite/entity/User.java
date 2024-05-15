@@ -1,5 +1,7 @@
 package com.zyh.mywebsite.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -11,8 +13,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
+
+    @TableId(type = IdType.AUTO)
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     @NotBlank(message = "Username cannot be null or empty.")

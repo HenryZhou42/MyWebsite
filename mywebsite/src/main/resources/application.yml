@@ -29,3 +29,4 @@ mybatis-plus:
     mapper-package: com.zyh.mywebsite.mapper
     data-permission:
       enabled: true
+

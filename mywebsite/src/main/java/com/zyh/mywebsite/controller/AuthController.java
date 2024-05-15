@@ -40,7 +40,7 @@ public class AuthController {
             // 处理其他异常情况
             Map<String, Object> responseBody = new HashMap<>();
             responseBody.put("status", "error");
-            responseBody.put("message", "An error occurred during registration");
+            responseBody.put("message", "An error occurred during registration" + e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseBody);
         }
     }

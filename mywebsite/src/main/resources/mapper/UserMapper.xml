@@ -2,6 +2,12 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zyh.mywebsite.mapper.UserMapper">
     <select id="getUserByUsername" resultType="com.zyh.mywebsite.entity.User">
-        select username, id from users where username =#{username}
+        select * from users where username =#{username}
     </select>
+    <select id="isUsernameAvailable" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM users WHERE username = #{username}
+    </select>
+    <insert id="insertNewUser">
+        INSERT INTO users (username, password) VALUES (#{username},#{password});
+    </insert>
 </mapper>
