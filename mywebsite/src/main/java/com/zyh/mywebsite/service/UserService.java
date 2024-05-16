@@ -1,53 +1,129 @@
 package com.zyh.mywebsite.service;
 
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.zyh.mywebsite.entity.User;
+import com.zyh.mywebsite.entity.UserRegistrationEvent;
 import com.zyh.mywebsite.mapper.UserMapper;
-import com.zyh.mywebsite.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class UserService {
 
+    private final static String CACHE_KEY_USERNAME_AVAILABLE = "user:availability:";
+    private final static String CACHE_KEY_USER_INFO = "user:info:";
+    private final static String CACHE_KEY_USER_AUTH = "user:auth:";
+
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
+
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private JmsTemplate jmsTemplate;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     public boolean isUsernameAvailable(String username) {
-        Integer exist = userMapper.isUsernameAvailable(username);
-        if (exist == null || exist == 0) {
-            return true;// 如果查询结果为0或null，表示用户名可用
-        } else {
-            return false; // 否则，表示用户名已被占用
+        ValueOperations<String, Object> ops = redisTemplate.opsForValue();
+        Boolean isAvailable = ops.get(CACHE_KEY_USERNAME_AVAILABLE + username) != null ?
+                (Boolean) ops.get(CACHE_KEY_USERNAME_AVAILABLE + username) : null;
+
+        if (isAvailable == null) {
+            Integer exist = userMapper.isUsernameAvailable(username);
+            isAvailable = (exist == null || exist == 0);
+            ops.set(CACHE_KEY_USERNAME_AVAILABLE + username, isAvailable, 10, TimeUnit.MINUTES); // 设置缓存5分钟过期
         }
+        return isAvailable;
     }
+
+//    public User register(User user) {
+//        if (isUsernameAvailable(user.getUsername())) {
+//            int rowsAffected = userMapper.insertNewUser(user);
+//            if (rowsAffected > 0) {
+//                // 注册成功后，将用户信息存入Redis
+//                redisTemplate.opsForValue().set(CACHE_KEY_USER_INFO + user.getUsername(), user, 10, TimeUnit.MINUTES);
+//                return user;
+//            } else {
+//                throw new RuntimeException("Failed to insert user into the database.");
+//            }
+//        } else {
+//            throw new IllegalArgumentException("The username already exists.");
+//        }
+//
+//    }
     public User register(User user) {
         if (isUsernameAvailable(user.getUsername())) {
-            // 使用MyBatisPlus的insert方法
             int rowsAffected = userMapper.insertNewUser(user);
             if (rowsAffected > 0) {
-                // 插入成功后，如果需要可以在此处根据刚插入的用户名称查询完整的用户信息
+                UserRegistrationEvent event = new UserRegistrationEvent(user.getUsername());
+                jmsTemplate.convertAndSend("user.registration.queue", event);
+                // 注册成功后，将用户信息存入Redis
+                redisTemplate.opsForValue().set(CACHE_KEY_USER_INFO + user.getUsername(), user, 10, TimeUnit.MINUTES);
                 return user;
             } else {
-                // 处理插入失败的情况，比如抛出异常或返回错误信息
-                throw new RuntimeException("Failed to insert user");
+                throw new RuntimeException("Failed to insert user into the database.");
             }
-        }else {
-            throw new IllegalArgumentException("Username already exists");
+        } else {
+            throw new IllegalArgumentException("The username already exists.");
         }
-}
-    public User authenticateUser(User user) {
-        // 根据用户名查找用户
-        Optional<User> optionalUser = Optional.ofNullable(userMapper.getUserByUsername(user.getUsername()));
 
-        // 检查用户是否存在且密码匹配
-        if (optionalUser.isPresent() && optionalUser.get().getPassword().equals(user.getPassword())) {
-            return optionalUser.get(); // 认证成功，返回用户对象
-        }
-        return null;  // 用户名不存在或密码不匹配，返回null
     }
 
+    @JmsListener(destination = "user.registration.queue")
+    public void handleUserRegistration(UserRegistrationEvent event) {
+
+        try {
+            String username = event.getUsername();
+            String testRecipientEmail = "1290420016@qq.com";
+            emailService.sendWelcomeEmail(testRecipientEmail, username);
+            if (StringUtils.isEmpty(username)) {
+                logger.warn("Received UserRegistrationEvent with empty username, skipping sending email.");
+                return;
+            }
+        } catch (Exception e) {
+            // 这里可以记录详细的错误信息到日志，并根据需要决定是否需要重新抛出异常
+            logger.error("Failed to send welcome email for user registration due to: ", e);
+            // 如果您的应用上下文支持，还可以考虑重试逻辑或其他补偿措施
+        }
+    }
+
+    public User authenticateUser(User user) {
+        ValueOperations<String, Object> ops = redisTemplate.opsForValue();
+        // 尝试从Redis中获取缓存的用户认证信息
+        String cacheKey = CACHE_KEY_USER_AUTH + user.getUsername();
+        User cachedUser = (User) ops.get(cacheKey);
+        if (cachedUser != null) {
+            // 如果缓存中存在用户，直接验证密码
+            if (cachedUser.getPassword().equals(user.getPassword())) {
+                return cachedUser; // 密码匹配，认证成功
+            } else {
+                return null; // 密码不匹配
+            }
+        }else {
+            // 缓存未命中，从数据库查询
+            Optional<User> optionalUser = Optional.ofNullable(userMapper.getUserByUsername(user.getUsername()));
+            if (optionalUser.isPresent() && optionalUser.get().getPassword().equals(user.getPassword())) {
+                // 认证成功，将用户信息存入Redis
+                ops.set(cacheKey, optionalUser.get(), 10, TimeUnit.MINUTES); //设置缓存10分钟过期
+                return optionalUser.get();
+            } else {
+                return null; // 用户不存在或密码不匹配
+            }
+        }
+    }
 }

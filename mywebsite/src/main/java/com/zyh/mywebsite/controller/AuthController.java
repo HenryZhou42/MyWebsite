@@ -40,7 +40,7 @@ public class AuthController {
             // 处理其他异常情况
             Map<String, Object> responseBody = new HashMap<>();
             responseBody.put("status", "error");
-            responseBody.put("message", "An error occurred during registration" + e);
+            responseBody.put("message", "An error occurred during registration"+e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseBody);
         }
     }
@@ -72,9 +72,7 @@ public class AuthController {
     @GetMapping("/check-username")
     public ResponseEntity<UserNameAvailabilityResponse> checkUsernameAvailability(@RequestParam("username") String username) {
         boolean isAvailable = userService.isUsernameAvailable(username);
-
         UserNameAvailabilityResponse response = new UserNameAvailabilityResponse(username, isAvailable);
-
         return ResponseEntity.ok(response);
     }
 }

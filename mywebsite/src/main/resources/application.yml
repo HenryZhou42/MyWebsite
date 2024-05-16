@@ -10,6 +10,34 @@ spring:
     username: root
     password: s1050218
     driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+      timeout: 1800000
+      password:
+  mail:
+    host: smtp.office365.com
+    port: 587
+    username: zyhhenry42@hotmail.com
+    password: s1050218
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          ssl:
+            trust: smtp.office365.com
+  activemq:
+    broker-url: tcp://localhost:61616
+    user: admin
+    password: admin
+    packages:
+      trusted: # 设置信任的包列表
+        - com.zyh.mywebsite.entity
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/*Mapper.xml

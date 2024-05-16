@@ -1,19 +1,28 @@
 package com.zyh.mywebsite;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zyh.mywebsite.entity.User;
 import com.zyh.mywebsite.mapper.UserMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+
 
 @SpringBootTest
 class MywebsiteApplicationTests {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
+
+	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	@Test
 	void contextLoads() {
@@ -37,12 +46,23 @@ class MywebsiteApplicationTests {
 	}
 
 	@Test
-	void insertUser(){
+	void testRedis(){
+		redisTemplate.opsForValue().set("username","testuserx");
+		String username = redisTemplate.opsForValue().get("username");
+		System.out.println(username);
+	}
+
+	@Test
+	void testRedis2() throws IOException {
 		User user = new User();
-		user.setUsername("testuser89");
+		user.setUsername("testuserx");
 		user.setPassword("123456");
-		userMapper.insert(user);
-		System.out.println(user);
+		String json = objectMapper.writeValueAsString(user);
+		redisTemplate.opsForValue().set("user",json);
+		String userJson = redisTemplate.opsForValue().get("user");
+
+		User user1 = objectMapper.readValue(userJson, User.class);
+		System.out.println(user1);
 	}
 
 }
