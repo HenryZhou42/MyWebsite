@@ -51,21 +51,6 @@ public class UserService {
         return isAvailable;
     }
 
-//    public User register(User user) {
-//        if (isUsernameAvailable(user.getUsername())) {
-//            int rowsAffected = userMapper.insertNewUser(user);
-//            if (rowsAffected > 0) {
-//                // 注册成功后，将用户信息存入Redis
-//                redisTemplate.opsForValue().set(CACHE_KEY_USER_INFO + user.getUsername(), user, 10, TimeUnit.MINUTES);
-//                return user;
-//            } else {
-//                throw new RuntimeException("Failed to insert user into the database.");
-//            }
-//        } else {
-//            throw new IllegalArgumentException("The username already exists.");
-//        }
-//
-//    }
     public User register(User user) {
         if (isUsernameAvailable(user.getUsername())) {
             int rowsAffected = userMapper.insertNewUser(user);
@@ -93,12 +78,10 @@ public class UserService {
             emailService.sendWelcomeEmail(testRecipientEmail, username);
             if (StringUtils.isEmpty(username)) {
                 logger.warn("Received UserRegistrationEvent with empty username, skipping sending email.");
-                return;
             }
         } catch (Exception e) {
-            // 这里可以记录详细的错误信息到日志，并根据需要决定是否需要重新抛出异常
+            //记录详细的错误信息到日志
             logger.error("Failed to send welcome email for user registration due to: ", e);
-            // 如果您的应用上下文支持，还可以考虑重试逻辑或其他补偿措施
         }
     }
 
